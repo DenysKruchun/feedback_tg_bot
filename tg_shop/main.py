@@ -1,6 +1,10 @@
 from telegram import Update
 import settings
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler,CallbackQueryHandler
+from telegram.ext import(
+ApplicationBuilder, CommandHandler,
+MessageHandler, filters, ConversationHandler,
+CallbackQueryHandler, ContextTypes
+)
 import db
 
 FULL_NAME, EMAIL, RATING, FEEDBACK = 0,1,2,3
@@ -14,29 +18,47 @@ async def start(update: Update, context):
 
 async def name(update: Update, context):
     context.user_data['full_name'] = update.message.text
-    await update.message.reply_text(f"Entry your email:")
-
-    return EMAIL
+    name = update.message.text.strip().capitalize()
+    if not name.isalpha():
+        await update.message.reply_text("Імя повинно бути з літер!:")
+        return FULL_NAME
+    
+    else:
+        await update.message.reply_text(f"Entry your email:")
+        return EMAIL
 
 
 async def email(update: Update, context):
     context.user_data['email'] = update.message.text
-    await update.message.reply_text(f"Entry rating from 1 to 5:")
+    email = update.message.text.strip()
+    if "@" in email:
+        await update.message.reply_text(f"Entry rating from 1 to 5:")
+        return RATING
+    
+    else:
+        await update.message.reply_text(f"Invalid email")
+        return EMAIL
 
-    return RATING
+
+async def rating(update: Update, context):
+    context.user_data['rating'] = update.message.text
+    rating = update.message.text.strip()
+    if not int(rating) or rating > 5 or rating < 0:
+        await update.message.reply_text(f"Invalid rating")
+        return RATING
+    else:
+        await update.message.reply_text(f"Entry your feedback:")
+        return FEEDBACK
 
 
+async def feedback(update: Update, context):
+    context.user_data['feedback'] = update.message.text
+    
 
-
-
-# async def start(update: Update, context):
-#     await update.message.reply_text("Купи слона")
-
-# async def hi(update: Update, context):
-#     await update.message.reply_text("Ні")
-
-# async def echo(update: Update, context):
-#     await update.message.reply_text(f"Усі так кажуть: {update.message.text}. А ти купи слона!")
+#Скасування реєстрації і кінець розмови
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text("Реєстрацію скасовано!")
+    return ConversationHandler.END
 
 
 # Основна частина програми
@@ -46,12 +68,13 @@ if __name__ == '__main__':
     # Додаємо обробник для команди /start
     application.add_handler(CommandHandler('start', start))
     conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler( start)], #початок реєстрації (після натискання на кнопку "Зареєструватися")
+        entry_points=[CallbackQueryHandler(start)], #початок реєстрації (після натискання на кнопку "Зареєструватися")
         states={
             FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, name)], # перше запитання
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
             RATING: [MessageHandler(filters.TEXT & ~filters.COMMAND, rating)],
-            FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND,city )],
+            FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND, feedback)],
+   
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
