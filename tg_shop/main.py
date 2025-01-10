@@ -38,20 +38,15 @@ async def email(update: Update, context):
     if "@" in email:
         context.user_data['email'] = update.message.text
         keyboard = [
-            [InlineKeyboardButton("1", callback_data = "button1")],
-            [InlineKeyboardButton("2", callback_data = "button2")],
-            [InlineKeyboardButton("3", callback_data = "button3")],
-            [InlineKeyboardButton("4", callback_data = "button4")],
-            [InlineKeyboardButton("5", callback_data = "button5")]
+            [InlineKeyboardButton("1", callback_data = "1")],
+            [InlineKeyboardButton("2", callback_data = "2")],
+            [InlineKeyboardButton("3", callback_data = "3")],
+            [InlineKeyboardButton("4", callback_data = "4")],
+            [InlineKeyboardButton("5", callback_data = "5")]
         ]        
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("Choose your rating!", reply_markup=reply_markup)
-    
-        
-
-
-    
-        return RATING
+        return FEEDBACK
     else:
         await update.message.reply_text(f"Invalid email")
         return EMAIL
@@ -61,21 +56,16 @@ async def email(update: Update, context):
 
 
 async def rating(update: Update, context): #rating
-    rating = update.message.text.strip()
-   
-    if rating.isdigit() and int(rating) <=5 and int(rating) > 0:
-        context.user_data['rating'] = update.message.text 
-        await update.message.reply_text(f"Entry your feedback:")
-        return FEEDBACK 
-    else:
-        await update.message.reply_text(f"Invalid rating")
-        return RATING 
-
-    
-async def button(update: Update, context):
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(text = f"Selected option{query.data}")
+    rating = query.data
+    await query.edit_message_text(text = f"Selected option {rating}")
+    context.user_data['rating'] = rating
+    await query.message.reply_text(f"Entry your feedback:")
+    return FEEDBACK 
+ 
+
+
 
 
 async def feedback(update: Update, context):
@@ -112,7 +102,7 @@ if __name__ == '__main__':
         states={
             FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, name)], # перше запитання
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
-            RATING: [MessageHandler(filters.TEXT & ~filters.COMMAND, rating)],
+            # RATING: [MessageHandler(filters.TEXT & ~filters.COMMAND, rating)],
             FEEDBACK: [MessageHandler(filters.TEXT & ~filters.COMMAND, feedback)],
 #    https://github.com/volodymyrlogika/tg_feedback/actions
         },
@@ -120,7 +110,7 @@ if __name__ == '__main__':
     )
 
     application.add_handler(conv_handler)
-    application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(CallbackQueryHandler(rating))
 
     
     # Запускаємо бота
